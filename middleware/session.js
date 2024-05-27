@@ -32,7 +32,7 @@ const authMiddleware = async (req, res, next) => {
             [propertiesKey.id]: dataToken[propertiesKey.id]
         }
         //const user = await usersModel.findById(dataToken._id) // findById solo para Mongoose
-        const user = await usersModel.findOne(query) // findOne válido para Mongoose y Sequelize
+        const user = await usersModel.findOne({where: query }) // findOne válido para Mongoose y Sequelize
         req.user = user // Inyecto al user en la petición
 
         next()

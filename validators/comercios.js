@@ -48,4 +48,36 @@ const validatorBorradoGetItem = [
     }
 ]
 
-module.exports = { validatorCreateItem, validatorGetItem, validatorBorradoGetItem }
+
+const validatorRegisterMerchants = [
+    check("nombre").exists().notEmpty(),
+    check("cif").exists().notEmpty(),
+    check("direccion").exists().notEmpty(),
+    check("email").exists().notEmpty(),
+    check("telefono").exists().isInt(),
+    (req, res, next) => {
+        return validateResults(req, res, next);
+    }
+]
+
+const validatorUpdateMerchants = [
+    check("id").exists().notEmpty(),
+    check("name").exists().notEmpty(),
+    check("cif").exists().notEmpty(),
+    check("direccion").exists().notEmpty(),
+    check("email").exists().notEmpty(),
+    check("telefono").exists().isInt(),
+    (req, res, next) => {
+        return validateResults(req, res, next);
+    }
+]
+
+const validatorDeleteItem = [
+    check("id").exists().notEmpty(),
+    (req, res, next) => {
+        return validateResults(req, res, next)
+    }
+]
+
+
+module.exports = { validatorCreateItem, validatorGetItem, validatorBorradoGetItem ,validatorRegisterMerchants,validatorUpdateMerchants,validatorDeleteItem}

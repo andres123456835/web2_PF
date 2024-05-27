@@ -94,7 +94,7 @@ router.post("/login", validatorLogin, loginCtrl)
  *      security:
  *          - bearerAuth: []
  */
-router.put("/update/:id", authMiddleware, checkRol(["admin"]), validatorGetUser, validatorUpdate, updateUser)
+router.put("/update/:id", authMiddleware, checkRol(["user", "admin", "merchant"]), validatorGetUser, validatorUpdate, updateUser)
 
 /**
  * @openapi
@@ -119,7 +119,7 @@ router.put("/update/:id", authMiddleware, checkRol(["admin"]), validatorGetUser,
  *      security:
  *          - bearerAuth: []
  */
-router.delete("/users/:id", authMiddleware, validatorGetUser, deleteUser)
+router.delete("/users/:id", authMiddleware,checkRol(["user", "admin", "merchant"]), validatorGetUser, deleteUser)
 //router.delete("/users/:id", validatorGetUser, deleteUser)
 
 module.exports = router

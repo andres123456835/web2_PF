@@ -1,6 +1,9 @@
 const { comerciosModel } = require('../models')
+const { webpagesModel } = require('../models')
 const { handleHttpError } = require('../utils/handleError')
 const { matchedData } = require('express-validator')
+const { registerCtrlMerchant } = require("./auth")
+const { registerPagina } = require("./webpages")
 /**
  * Obtener lista de la base de datos
  * @param {*} req 
@@ -11,7 +14,7 @@ const getItems = async (req, res) => {
         const user = req.user //Obtengo trazabilidad del usuario, puedo ver qué solicita, su rol, etc.
         var data
         //(process.env.ENGINE_DB === "nosql") ? data = await tracksModel.find() : data = await tracksModel.findAll()
-        data = await comerciosModel.findAllData() // findAllData(): custom static function
+        data = await comerciosModel.findAll() // findAllData(): custom static function
         res.send({data, user})
     }catch(err){
         console.log(err) //Opcional
@@ -28,8 +31,8 @@ const getItems = async (req, res) => {
 const getItem = async (req, res) => {
     try{
         const {cif} = matchedData(req) //Me quedo solo con el id
-        //const data = await tracksModel.findById(id)
-        const data = await comerciosModel.find({cif: cif });
+        //const data = await tracksModel.findById(id)       
+        const data = await comerciosModel.findOne({where: { cif: cif }})
         res.send(data)
     } catch(err){
         console.log(err)
@@ -71,7 +74,7 @@ const updateItem = async (req, res) => {
     try {
         const {cif, ...body} = matchedData(req) //Extrae el id y el resto lo asigna a la constante body
         //const data = await comerciosModel.findOneAndUpdate(id, body);
-        const data = await comerciosModel.updateOne({ cif:  cif },body);
+        const data = await comerciosModel.update(body, {where: { cif: cif }});
         res.send(data)    
     }catch(err){
         //console.log(err) 
@@ -87,15 +90,23 @@ const updateItem = async (req, res) => {
 const deleteItem = async (req, res) => {
     try {
         const {cif,tipo} = matchedData(req)
+        
         if(tipo == 1){//borrado fisico
             //const data = await tracksModel.deleteOne({_id:id}); // "deleteOne" realiza el borrado físico en la BD
-            const data = await comerciosModel.deleteOne({cif:cif}); // "delete" realiza el borrado fisico
-            res.send(data)    
+            const data = await comerciosModel.destroy({where: { cif: cif }}); // "delete" realiza el borrado fisico
+            if(data === 1){
+                res.status(200).json({message:"Deleted successfully"});
+            }else{
+                res.status(404).json({message:"record not found"});
+            }   
         }else{//borrado logico
 
-            const data = await comerciosModel.delete({cif:cif}); // "delete" realiza el borrado lógico
-            res.send(data)    
-
+            const data = await comerciosModel.destroy({where: { cif: cif }}); // "delete" realiza el borrado lógico
+            if(data === 1){
+                res.status(200).json({message:"Deleted successfully"});
+            }else{
+                res.status(404).json({message:"record not found"});
+            }
             /*const dataComercio = await comerciosModel.find({cif: cif });
 
             const body = {
@@ -111,12 +122,94 @@ const deleteItem = async (req, res) => {
             const data = await comerciosModel.updateOne({ cif:  cif },body);
             res.send(data)  */  
         }
-       
+        
     }catch(err){
         //console.log(err)
         handleHttpError(res, 'ERROR_DELETE_ITEM')
     }
 }
 
+/**
+ * Obtener un detalle
+ * @param {} req
+ * @param {*} res
+*/
 
-module.exports = { getItems, getItem, createItem, updateItem, deleteItem };
+const registerMerchants = async (req, res) => {
+    try{
+        req = matchedData(req);
+        const dataMerchant = await comerciosModel.create(req);
+        
+        const reqUser = {
+            name: req.nombre,
+            age:-1,
+            email: req.email,
+            password: "123456" + req.nombre,
+            role: "merchant"
+        }
+        
+        const resUser = res;
+        
+        await registerCtrlMerchant(reqUser, resUser);
+        
+        const pagina = {
+            idMerchant: dataMerchant.id,
+            ciudad:"",
+            actividad: "",
+            titulo: "",
+            resumen: ""
+        }
+
+        let varObj = {
+            id: 1
+        }
+
+        await registerPagina(pagina, varObj);
+
+        console.log(pagina);
+        
+        const data = {
+            idpagina : varObj.id,
+            merchant: dataMerchant
+        }
+
+        res.send(data);
+    }catch(err){
+        console.log(err);
+        handleHttpError(res, "ERROR_REGISTER_MERCHANT");
+    }
+}
+
+const updateMerchants = async (req, res) => {
+    try{
+        const {id, ...body} = matchedData(req);
+        const data = await comerciosModel.update(body, {where: { id: id }});
+        
+        res.send(data);
+    }catch(err){
+        console.log(err);
+        handleHttpError(res, 'ERROR_UPDATE_MERCHANT');
+    }
+}
+
+const deleteMerchants = async (req, res) => {
+    try{
+        const {id} = matchedData(req);
+        var data = "";
+        
+        data = await comerciosModel.destroy({where: { id: id }});
+
+        data = await webpagesModel.destroy({where: { idMerchant: id }});
+        
+        if(data === 1){
+            res.status(200).json({message:"Deleted successfully"});
+        }else{
+            res.status(404).json({message:"record not found"});
+        }
+    }catch(err){
+        console.log(err);
+        handleHttpError(res, 'ERROR_DELETE_MERCHANT');
+    }
+}
+
+module.exports = { getItems, getItem, createItem, updateItem, deleteItem ,registerMerchants,updateMerchants,deleteMerchants};

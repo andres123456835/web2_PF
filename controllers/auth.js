@@ -39,9 +39,8 @@ const registerCtrl = async (req, res) => {
 const loginCtrl = async (req, res) => {
     try {
         req = matchedData(req)
-        var user
-        (process.env.ENGINE_DB === "nosql") ? user = await usersModel.findOne({ email: req.email }).select("password name role email") : user = await usersModel.findOne({ email: req.email })
-
+        const user = await usersModel.findOne({where: {  email: req.email  }});
+        
         if(!user){
             handleHttpError(res, "USER_NOT_EXISTS", 404)
             return
@@ -74,9 +73,11 @@ const updateUser = async (req, res) => {
     try {
         //const id = req.params.id 
         //const {body} = matchedData(req) //Extrae el id y el resto lo asigna a la constante body
-        const {id, ...body} = matchedData(req) //Extrae el id y el resto lo asigna a la constante body
-        body.rol = "admin"
-        const data = await usersModel.findByIdAndUpdate(id, body)
+        const {id, password,...body} = matchedData(req) //Extrae el id y el resto lo asigna a la constante body
+        //body.rol = "admin"
+        const password2 = await encrypt(password)
+        body.password = password2
+        const data = await usersModel.update(body, {where: { id: id }});
         res.send(data)    
     }catch(err){
         console.log(err) 
@@ -93,7 +94,11 @@ const deleteUser = async (req, res) => {
         }else {
             data = await usersModel.destroy({ where: { id: id } })
         }
-        res.send(data)
+        if(data === 1){
+            res.status(200).json({message:"Deleted successfully"});
+        }else{
+            res.status(404).json({message:"record not found"});
+        } 
     } catch(err){
         console.log(err)
         handleHttpError(res, 'ERROR_DELETE_USER')
@@ -116,4 +121,23 @@ const getUsers = async (req, res) => {
     }
 }
 
-module.exports = { registerCtrl, loginCtrl, updateUser, getUsers, deleteUser }
+const registerCtrlMerchant = async (req, res) => {
+    try{  
+        const password = await encrypt(req.password);
+        const body = {...req, password}; // Con "..." duplicamos el objeto y le añadimos o sobreescribimos una propiedad
+        const dataUser = await usersModel.create(body);
+      
+        const data = {
+            token: await tokenSign(dataUser)
+        }
+        req  = {...req, data}; 
+
+        //res.send(data);
+        
+    }catch(err){
+        console.log(err);
+        handleHttpError(res, "ERROR_REGISTER_USER");
+    }
+}
+
+module.exports = { registerCtrl, loginCtrl, updateUser, getUsers, deleteUser,registerCtrlMerchant }

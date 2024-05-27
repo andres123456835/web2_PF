@@ -6,7 +6,10 @@ const models = {
     usersModel: require(pathModels+'users'),
     tracksModel: require(pathModels+'tracks'),
     comerciosModel: require(pathModels+'comercios'),
-    storageModel: require(pathModels+'storage')
+    webpagesModel: require(pathModels+'webpages'),
+    storageModel: require(pathModels+'storage'),
+    fotosModel: require(pathModels+'fotos'),
+    textosModel: require(pathModels+'textos')
 }
 
 module.exports = models
